@@ -1,29 +1,23 @@
-import re
-import json
 import hashlib
-from astrbot.api.star import Context, Star, register
+import json
+import re
+
 from astrbot import logger
 from astrbot.api.event import filter
+from astrbot.api.star import Context, Star
 from astrbot.core.platform.astr_message_event import AstrMessageEvent
 from astrbot.core.star.filter.permission import PermissionType
 
 CMD_CONFIG_PATH = "data/cmd_config.json"
 
 
-@register(
-    "astrbot_plugin_password",
-    "Zhalslar",
-    "强制修改astrbot的面板登录密码（仅管理员可用）",
-    "1.0.0",
-    "https://github.com/Zhalslar/astrbot_plugin_password",
-)
-class Box(Star):
+class PasswordPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
 
     def _load_json_data(self) -> dict:
         """加载并解析 JSON 文件，去除 BOM"""
-        with open(CMD_CONFIG_PATH, "r", encoding="utf-8") as file:
+        with open(CMD_CONFIG_PATH, encoding="utf-8") as file:
             content = file.read()
             if content.startswith("\ufeff"):
                 content = content[1:]  # 去除 BOM

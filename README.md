@@ -6,7 +6,7 @@
 
 # astrbot_plugin_password
 
-_✨ [astrbot](https://github.com/AstrBotDevs/AstrBot) 密码插件 ✨_  
+_✨ 密码插件 ✨_  
 
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
@@ -21,16 +21,7 @@ _✨ [astrbot](https://github.com/AstrBotDevs/AstrBot) 密码插件 ✨_
 
 ## 📦 安装
 
-- 从插件市场搜索astrbot_plugin_password，点击安装即可。
-- 安装不成功也可以尝试直接用命令行下载：
-
-```bash
-# 克隆仓库到插件目录
-cd /AstrBot/data/plugins
-git clone https://github.com/Zhalslar/astrbot_plugin_password
-
-# 控制台重启AstrBot
-```
+在Astrbot插件市场搜索 astrbot_plugin_password，点击安装即可。
 
 ## ⌨️ 使用说明
 

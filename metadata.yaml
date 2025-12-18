@@ -1,6 +1,7 @@
-name: astrbot_plugin_password # 这是你的插件的唯一识别名。
-desc: 强制修改astrbot面板的用户名、密码（仅管理员可用）  # 插件简短描述
-help: /修改密码 xxx  # 插件的帮助信息
-version: v1.0.1 # 插件版本号。格式：v1.1.1 或者 v1.1
-author: Zhalslar # 作者
-repo: https://github.com/Zhalslar/astrbot_plugin_password # 插件的仓库地址
+name: astrbot_plugin_password
+display_name: 密码修改器
+desc: 强制修改astrbot面板的用户名、密码（仅管理员可用）
+help: 略
+version: v1.0.1
+author: Zhalslar
+repo: https://github.com/Zhalslar/astrbot_plugin_password
