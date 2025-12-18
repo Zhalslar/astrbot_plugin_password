@@ -57,7 +57,9 @@ class PasswordPlugin(Star):
         data["dashboard"]["username"] = new_username
         self._save_json_data(data)
 
-        yield event.plain_result(f"用户名已更新为{new_username}\n重启bot后生效")
+        yield event.plain_result(
+            f"Astrbot的面板用户名已更新为{new_username}\n重启bot后生效"
+        )
         logger.info(f"Astrbot的面板用户名已更新为{new_username}")
 
     @filter.permission_type(PermissionType.ADMIN)
@@ -88,5 +90,7 @@ class PasswordPlugin(Star):
         self._save_json_data(data)
 
         masked_password = str(new_password)[0] + "*" * (len(str(new_password)) - 1)
-        yield event.plain_result(f"密码已更新为{masked_password}\n重启bot后生效")
+        yield event.plain_result(
+            f"Astrbot的面板密码已更新为{masked_password}\n重启bot后生效"
+        )
         logger.info(f"Astrbot的面板登录密码已更新为{new_password}")
