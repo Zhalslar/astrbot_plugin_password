@@ -1,34 +1,16 @@
 import json
+import os
 
-from astrbot import logger
+from astrbot.api import logger
 from astrbot.api.event import filter
 from astrbot.api.star import Context, Star
 from astrbot.core.platform.astr_message_event import AstrMessageEvent
 from astrbot.core.star.filter.permission import PermissionType
-
-try:
-    from astrbot.core.utils.auth_password import (
-        hash_dashboard_password,
-        hash_md5_dashboard_password,
-        validate_dashboard_password,
-    )
-except ImportError:
-    # 兼容低版本
-    import hashlib
-    import re
-
-    def hash_dashboard_password(raw: str) -> str | None:
-        return None
-
-    def hash_md5_dashboard_password(raw: str) -> str:
-        return hashlib.md5(raw.encode("utf-8")).hexdigest()
-
-    def validate_dashboard_password(raw: str) -> None:
-        if len(raw) < 4:
-            raise ValueError("密码长度至少为4位")
-        if not re.match(r"^[A-Za-z0-9!@#$%^&*(),.?\":{}|<>]+$", raw):
-            raise ValueError("密码只能包含大小写字母、数字和特殊字符")
-
+from astrbot.core.utils.auth_password import (
+    hash_dashboard_password,
+    hash_md5_dashboard_password,
+    validate_dashboard_password,
+)
 
 CMD_CONFIG_PATH = "data/cmd_config.json"
 
@@ -38,18 +20,27 @@ class PasswordPlugin(Star):
         super().__init__(context)
 
     def _load_json_data(self) -> dict:
-        """加载并解析 JSON 文件，去除 BOM"""
-        with open(CMD_CONFIG_PATH, encoding="utf-8") as file:
-            content = file.read()
-            if content.startswith("\ufeff"):
-                content = content[1:]  # 去除 BOM
-            data = json.loads(content)
-        return data
+        """加载并解析 JSON 文件，去除 BOM，并加入容错"""
+        if not os.path.exists(CMD_CONFIG_PATH):
+            raise FileNotFoundError(f"配置文件不存在: {CMD_CONFIG_PATH}")
+        try:
+            with open(CMD_CONFIG_PATH, encoding="utf-8") as file:
+                content = file.read()
+                if content.startswith("\ufeff"):
+                    content = content[1:]
+                data = json.loads(content)
+                if not isinstance(data, dict):
+                    raise ValueError("配置文件内容格式错误，非有效字典")
+                return data
+        except json.JSONDecodeError as e:
+            raise ValueError(f"配置文件 JSON 损坏无法解析: {e}")
 
     def _save_json_data(self, data: dict):
-        """将数据保存到 JSON 文件"""
-        with open(CMD_CONFIG_PATH, "w", encoding="utf-8") as file:
+        """将数据安全保存到 JSON 文件"""
+        temp_path = f"{CMD_CONFIG_PATH}.tmp"
+        with open(temp_path, "w", encoding="utf-8") as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
+        os.replace(temp_path, CMD_CONFIG_PATH)
 
     @filter.permission_type(PermissionType.ADMIN)
     @filter.command("修改用户名")
@@ -65,11 +56,23 @@ class PasswordPlugin(Star):
             yield event.plain_result("用户名不能为空")
             return
 
-        data = self._load_json_data()
-        if "dashboard" not in data:
+        try:
+            data = self._load_json_data()
+        except Exception as e:
+            yield event.plain_result(f"读取配置文件失败: {e}")
+            logger.error(f"读取 {CMD_CONFIG_PATH} 失败: {e}")
+            return
+
+        if "dashboard" not in data or not isinstance(data["dashboard"], dict):
             data["dashboard"] = {}
         data["dashboard"]["username"] = new_username
-        self._save_json_data(data)
+
+        try:
+            self._save_json_data(data)
+        except Exception as e:
+            yield event.plain_result(f"保存配置文件失败: {e}")
+            logger.error(f"保存 {CMD_CONFIG_PATH} 失败: {e}")
+            return
 
         yield event.plain_result(
             f"Astrbot的面板用户名已更新为: {new_username}\n重启bot后生效"
@@ -88,19 +91,22 @@ class PasswordPlugin(Star):
 
         new_password = str(input_password).strip()
 
-        # 校验密码复杂度
         try:
             validate_dashboard_password(new_password)
         except ValueError as e:
             yield event.plain_result(f"密码不符合要求: {e}")
             return
 
-        # 更新配置
-        data = self._load_json_data()
-        if "dashboard" not in data:
+        try:
+            data = self._load_json_data()
+        except Exception as e:
+            yield event.plain_result(f"读取配置文件失败: {e}")
+            logger.error(f"读取 {CMD_CONFIG_PATH} 失败: {e}")
+            return
+
+        if "dashboard" not in data or not isinstance(data["dashboard"], dict):
             data["dashboard"] = {}
 
-        # 写入 PBKDF2 哈希（Astrbot v4+）与兼容 MD5
         pbkdf2_hash = hash_dashboard_password(new_password)
         if pbkdf2_hash:
             data["dashboard"]["pbkdf2_password"] = pbkdf2_hash
@@ -109,7 +115,12 @@ class PasswordPlugin(Star):
 
         data["dashboard"]["password"] = hash_md5_dashboard_password(new_password)
 
-        self._save_json_data(data)
+        try:
+            self._save_json_data(data)
+        except Exception as e:
+            yield event.plain_result(f"保存配置文件失败: {e}")
+            logger.error(f"保存 {CMD_CONFIG_PATH} 失败: {e}")
+            return
 
         masked_password = new_password[0] + "*" * (len(new_password) - 1)
         yield event.plain_result(
